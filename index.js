@@ -1,6 +1,30 @@
 const express = require("express"); // Express.js kütüphanesini içe aktarır
 const cookieParser = require("cookie-parser");
 const app = express(); // Yeni bir Express uygulama nesnesi oluşturur
+const session = require("express-session");
+
+// Express uygulamasında oturum yönetimi için `session` middleware'ini kullanıyoruz
+app.use(
+  session({
+    // Oturumun şifrelenmesi için kullanılan gizli anahtar. Bu anahtar, oturum verilerinin güvenliğini sağlamak için önemlidir.
+    secret: "hello world",
+
+    // `resave` seçeneği, oturum verilerinin her istekten sonra yeniden kaydedilip kaydedilmeyeceğini belirler.
+    // Burada `false` olarak ayarlandığında, sadece oturumda değişiklik olduğunda kaydedilir.
+    resave: false,
+
+    // `saveUninitialized` seçeneği, yeni oluşturulmuş ama henüz oturum verisi içermeyen oturumları kaydedip kaydetmeyeceğini belirler.
+    // `true` olarak ayarlandığında, henüz başlangıç verisi olmadan da oturum kaydedilir.
+    saveUninitialized: false,
+
+    // `cookie` nesnesi, oturum çerezi ile ilgili ayarları içerir.
+    cookie: {
+      // `secure` seçeneği, çerezin yalnızca HTTPS üzerinden gönderilmesini sağlar.
+      // Bu, çerezin güvenliğini artırır çünkü veriler yalnızca şifreli bağlantılar üzerinden iletilir.
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  })
+);
 
 app.use(cookieParser());
 app.set("view engine", "ejs"); // Şablon motoru olarak EJS'i ayarlar

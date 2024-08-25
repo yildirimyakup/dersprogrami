@@ -81,8 +81,8 @@ exports.post_login = async (req, res) => {
 
     if (match) {
       // Login Yapıldı...
-      console.log("giriş Yapıldı..");
-      res.cookie("isAuth", 1);
+      req.sew;
+      sessionStorage.isAuth = 1;
       return res.redirect("/");
     }
 
@@ -100,7 +100,7 @@ exports.post_login = async (req, res) => {
 
 exports.get_logout = async function (req, res) {
   try {
-    res.clearCookie("isAuth");
+    await req.session.destroy();
     return res.redirect("/account/login");
   } catch (err) {
     console.log(err);
