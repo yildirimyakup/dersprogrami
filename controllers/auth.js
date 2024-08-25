@@ -12,7 +12,7 @@ exports.get_register = async (req, res) => {
   } catch (error) {
     // Hata oluşursa, hata mesajını konsola yazdırır
     console.log("Sayfa => auth.js:", error);
-    res.redirect("/account/auth/login");
+    res.redirect("/account/login");
   }
 };
 
@@ -33,11 +33,11 @@ exports.post_register = async (req, res) => {
     });
 
     // Kayıt başarılıysa, kullanıcıyı login sayfasına yönlendirir
-    res.redirect("/account/auth/login");
+    res.redirect("/account/login");
   } catch (error) {
     // Hata oluşursa, hata mesajını konsola yazdırır ve kullanıcıyı kayıt sayfasına yönlendirir
     console.log("Sayfa => auth.js:", error);
-    res.redirect("/account/auth/register?error=true"); // Hata parametresi ile kayıt sayfasına yönlendirir
+    res.redirect("/account/register?error=true"); // Hata parametresi ile kayıt sayfasına yönlendirir
   }
 };
 
@@ -82,7 +82,8 @@ exports.post_login = async (req, res) => {
     if (match) {
       // Login Yapıldı...
       console.log("giriş Yapıldı..");
-      return;
+      res.cookie("isAuth", 1);
+      return res.redirect("/");
     }
 
     // Giriş başarılıysa, kullanıcıyı login sayfasına yönlendirir
@@ -93,6 +94,15 @@ exports.post_login = async (req, res) => {
   } catch (error) {
     // Hata oluşursa, hata mesajını konsola yazdırır ve kullanıcıyı kayıt sayfasına yönlendirir
     console.log("Sayfa => login.js:", error);
-    res.redirect("/auth/login?error=true"); // Hata parametresi ile kayıt sayfasına yönlendirir
+    res.redirect("account/login?error=true"); // Hata parametresi ile kayıt sayfasına yönlendirir
+  }
+};
+
+exports.get_logout = async function (req, res) {
+  try {
+    res.clearCookie("isAuth");
+    return res.redirect("/account/login");
+  } catch (err) {
+    console.log(err);
   }
 };

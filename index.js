@@ -1,7 +1,8 @@
 const express = require("express"); // Express.js kütüphanesini içe aktarır
-
+const cookieParser = require("cookie-parser");
 const app = express(); // Yeni bir Express uygulama nesnesi oluşturur
 
+app.use(cookieParser());
 app.set("view engine", "ejs"); // Şablon motoru olarak EJS'i ayarlar
 app.use(express.urlencoded({ extended: false })); // URL encoded verileri parse etmek için middleware kullanır
 
