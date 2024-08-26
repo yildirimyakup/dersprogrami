@@ -17,7 +17,6 @@ exports.blogs_details = async function (req, res) {
       return res.render("users/blog-details", {
         title: blog.baslik,
         blog: blog,
-        isAuth: req.session.isAuth,
       });
     }
     res.redirect("/");
@@ -50,7 +49,6 @@ exports.blog_list = async function (req, res) {
       currentPage: page,
       categories: categories,
       selectedCategory: slug,
-      isAuth: req.session.isAuth,
     });
   } catch (err) {
     console.log(err);
@@ -72,7 +70,6 @@ exports.index = async function (req, res) {
       blogs: blogs,
       categories: categories,
       selectedCategory: null,
-      isAuth: req.session.isAuth,
     });
   } catch (err) {
     console.log(err);

@@ -144,7 +144,6 @@ exports.get_blog_edit = async function (req, res) {
         title: blog.dataValues.baslik,
         blog: blog.dataValues,
         categories: categories,
-        isAuth: req.cookies.isAuth,
       });
     }
 
@@ -241,7 +240,6 @@ exports.get_category_edit = async function (req, res) {
         category: category.dataValues,
         blogs: blogs,
         countBlog: countBlog,
-        isAuth: req.cookies.isAuth,
       });
     }
 
@@ -286,7 +284,6 @@ exports.get_blogs = async function (req, res) {
       blogs: blogs,
       action: req.query.action,
       blogid: req.query.blogid,
-      isAuth: req.cookies.isAuth,
     });
   } catch (err) {
     console.log(err);
@@ -302,7 +299,6 @@ exports.get_categories = async function (req, res) {
       categories: categories,
       action: req.query.action,
       categoryid: req.query.categoryid,
-      isAuth: req.cookies.isAuth,
     });
   } catch (err) {
     console.log(err);

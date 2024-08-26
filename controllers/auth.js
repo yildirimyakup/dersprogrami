@@ -5,9 +5,12 @@ const bcrypt = require("bcrypt"); // Şifreleri hash'lemek için bcrypt kütüph
 // GET /register: Kullanıcı kayıt sayfasını render eden işlev
 exports.get_register = async (req, res) => {
   try {
+    const message = req.session.message;
+    delete req.session.message;
     // 'auth/register' şablonunu 'title' değişkeni ile render eder
     res.render("auth/register", {
       title: "Register Page.",
+      message: message,
     });
   } catch (error) {
     // Hata oluşursa, hata mesajını konsola yazdırır
@@ -20,6 +23,16 @@ exports.get_register = async (req, res) => {
 exports.post_register = async (req, res) => {
   // Formdan gelen kullanıcı verilerini alır
   const { name, email, password } = req.body;
+
+  const emailControl = User.findOne({
+    where: {
+      e_mail: email,
+    },
+  });
+  if (emailControl) {
+    req.session.message = "Girdiğiniz emaiş ile daha önce kayıt yapılmıştır...";
+    return res.redirect("/account/register");
+  }
 
   try {
     // Şifreyi bcrypt ile hash'ler (şifreleme işlemi)
@@ -44,9 +57,12 @@ exports.post_register = async (req, res) => {
 // GET /login: Kullanıcı giriş sayfasını render eden işlev
 exports.get_login = async (req, res) => {
   try {
+    const message = req.session.message;
+    delete req.session.message;
     // 'auth/login' şablonunu 'title' değişkeni ile render eder
     res.render("auth/login", {
       title: "Login Page.",
+      message: message,
     });
   } catch (error) {
     // Hata oluşursa, hata mesajını konsola yazdırır
@@ -81,9 +97,10 @@ exports.post_login = async (req, res) => {
 
     if (match) {
       // Login Yapıldı...
-      req.sew;
-      sessionStorage.isAuth = 1;
-      return res.redirect("/");
+      req.session.isAuth = true;
+      req.session.fullName = userControl.full_name;
+      const url = req.query.returnUrl || "/";
+      return res.redirect(url);
     }
 
     // Giriş başarılıysa, kullanıcıyı login sayfasına yönlendirir

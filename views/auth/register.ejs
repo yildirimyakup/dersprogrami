@@ -7,6 +7,9 @@
     <%- include("../partials/nav") %>
 
     <div class="container mt-3">
+      <% if (typeof message != "undefined") { %>
+      <div class="alert alert-warning"><%= message %></div>
+      <% } %>
       <div class="row">
         <div class="col-md-12 mt-3">
           <form method="post">

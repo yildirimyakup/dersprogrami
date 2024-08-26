@@ -15,4 +15,7 @@ router.get("/login", authController.get_login);
 // POST /auth/login: Kullanıcı giriş formundan gelen verileri işleyen işlevi tanımlar
 router.post("/login", authController.post_login);
 
+// GET /auth/logout: Kullanıcı çıkış işlevini tanımlat
+router.get("/logout", authController.get_logout);
+
 module.exports = router; // Router'ı dışa aktarır, böylece diğer modüllerde kullanılabilir
