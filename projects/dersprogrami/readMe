@@ -1,0 +1,204 @@
+Anladım! Projenin dinamik olmasını, **Sequelize ORM** ile yönetileceğini ve tüm sınıfların haftalık 35 ders saatini doldurması gerektiğini göz önünde bulundurarak daha detaylı bir yol haritası sunuyorum. Aşağıda, tüm gereksinimlerinizi karşılayacak şekilde proje adımlarını ve veri yapısını daha kapsamlı bir şekilde açıklıyorum.
+
+---
+
+### **Proje Hedefi:**
+Bu proje, öğretmenlerin ve sınıfların ders programlarını otomatik olarak oluşturmayı amaçlar. Tüm sınıflar haftada 35 saat ders alacak, sınıfların haftalık müfredatları tanımlanacak, öğretmenlerin kısıtlamalarına (müsaitlik ve branşlar) göre ders programı yerleştirilecektir. Her sınıf için aynı zaman diliminde ders yapılacak ve boş ders olmayacak şekilde bir yerleştirme algoritması uygulanacaktır.
+
+---
+
+### **Projenin Detaylı Yol Haritası**
+
+#### **Adım 1: Veritabanı Tasarımı (Sequelize ile)**
+
+Veritabanı modelleri, öğretmenlerin branşlarını, sınıfların müfredatını, derslerin öğretmen ve sınıflara atanmasını içerecek. Ayrıca, sınıflar her gün 7 ders olacak şekilde düzenlenecek ve boş saat bırakılmayacak.
+
+#### **Veritabanı Modelleri:**
+
+1. **Teacher (Öğretmenler):**
+   - **id**: Otomatik artan birincil anahtar.
+   - **name**: Öğretmen adı.
+   - **branch**: Öğretmenin branşı (örneğin Matematik, Fen Bilgisi).
+   - **availableDays**: Öğretmenin haftanın hangi günlerinde müsait olduğunu belirten bir dizi.
+   - **availableHours**: Öğretmenin hangi saatlerde müsait olduğunu belirten bir dizi.
+
+2. **Class (Sınıflar/Şubeler):**
+   - **id**: Otomatik artan birincil anahtar.
+   - **name**: Sınıf adı (örneğin 5A, 6B).
+   - **weeklySchedule**: Her sınıf için belirlenen haftalık ders programı (müfredat).
+
+3. **Subject (Dersler/Branşlar):**
+   - **id**: Otomatik artan birincil anahtar.
+   - **name**: Ders adı (örneğin Matematik, Fen Bilgisi).
+   - **weeklyHours**: Haftada kaç saat o dersten yapılacağı.
+
+4. **Schedule (Ders Programı):**
+   - **id**: Otomatik artan birincil anahtar.
+   - **teacherId**: Öğretmeni temsil eden yabancı anahtar.
+   - **classId**: Sınıfı temsil eden yabancı anahtar.
+   - **subjectId**: Dersi temsil eden yabancı anahtar.
+   - **day**: Hangi gün ders yapıldığını belirten alan.
+   - **hour**: Hangi saatte ders yapıldığını belirten alan.
+
+#### **Örnek Sequelize Modelleri:**
+
+```javascript
+// Teacher Modeli
+module.exports = (sequelize, DataTypes) => {
+  const Teacher = sequelize.define('Teacher', {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    branch: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    availableDays: {
+      type: DataTypes.ARRAY(DataTypes.STRING),  // ['MONDAY', 'TUESDAY', ...]
+      allowNull: false,
+    },
+    availableHours: {
+      type: DataTypes.ARRAY(DataTypes.INTEGER),  // [9, 10, 11, 12, ...]
+      allowNull: false,
+    },
+  });
+  Teacher.associate = (models) => {
+    Teacher.hasMany(models.Schedule, { foreignKey: 'teacherId' });
+  };
+  return Teacher;
+};
+
+// Class Modeli
+module.exports = (sequelize, DataTypes) => {
+  const Class = sequelize.define('Class', {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    weeklySchedule: {
+      type: DataTypes.JSONB,  // Dinamik olarak ders müfredatını JSON formatında saklayacağız
+      allowNull: false,
+    },
+  });
+  Class.associate = (models) => {
+    Class.hasMany(models.Schedule, { foreignKey: 'classId' });
+  };
+  return Class;
+};
+
+// Subject (Ders) Modeli
+module.exports = (sequelize, DataTypes) => {
+  const Subject = sequelize.define('Subject', {
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    weeklyHours: {
+      type: DataTypes.INTEGER,  // Haftalık ders saati (örn. 5 saat Matematik)
+      allowNull: false,
+    },
+  });
+  Subject.associate = (models) => {
+    Subject.hasMany(models.Schedule, { foreignKey: 'subjectId' });
+  };
+  return Subject;
+};
+
+// Schedule (Ders Programı) Modeli
+module.exports = (sequelize, DataTypes) => {
+  const Schedule = sequelize.define('Schedule', {
+    day: {
+      type: DataTypes.STRING,  // 'MONDAY', 'TUESDAY' ...
+      allowNull: false,
+    },
+    hour: {
+      type: DataTypes.INTEGER,  // 9 (9:00), 10 (10:00) ...
+      allowNull: false,
+    },
+  });
+  Schedule.associate = (models) => {
+    Schedule.belongsTo(models.Teacher, { foreignKey: 'teacherId' });
+    Schedule.belongsTo(models.Class, { foreignKey: 'classId' });
+    Schedule.belongsTo(models.Subject, { foreignKey: 'subjectId' });
+  };
+  return Schedule;
+};
+```
+
+---
+
+### **Adım 2: İşleyiş Mantığı**
+
+1. **Öğretmenlerin Tanımlanması:**
+   - Öğretmenler sisteme girilecek ve hangi branş derslerine girdikleri, hangi gün ve saatlerde müsait oldukları belirtilecek.
+
+2. **Sınıfların Tanımlanması ve Ders Müfredatları:**
+   - Her sınıf için haftalık müfredat belirlenip, hangi derslerden kaç saat ders alacakları belirtilecek. Örneğin:
+     - 5A sınıfı haftada 4 saat Matematik, 3 saat Fen Bilgisi, 2 saat İngilizce vb.
+
+3. **Derslerin ve Öğretmenlerin Müsaitlik Durumu:**
+   - Tüm sınıflar için haftada 35 saat ders olacağı belirtilmişti. Bu saatler, öğretmenlerin müsaitliklerine ve sınıf müfredatına göre optimize edilerek yerleştirilecek.
+
+4. **Yerleştirme Algoritması:**
+   - Yerleştirme algoritması, öğretmenlerin ve sınıfların kısıtlamalarını (müsaitlik, branş, saat) göz önünde bulundurarak, her sınıfa haftalık ders programını oluşturacak.
+
+5. **Çakışmaların Engellenmesi:**
+   - Algoritma, bir öğretmenin aynı anda birden fazla sınıfa ders veremeyeceğini kontrol edecek ve çakışmaları önleyecek.
+
+---
+
+### **Adım 3: Ders Programı Yerleştirme Algoritması**
+
+#### **Yerleştirme Algoritmasının Adımları:**
+
+1. **Tüm Sınıfların Ders İhtiyaçlarını Belirle:**
+   - Her sınıf için müfredatta belirtilen haftalık ders saatlerini topla. Örneğin:
+     - 5A sınıfı haftada 4 saat Matematik, 3 saat Fen Bilgisi, 2 saat İngilizce dersine ihtiyaç duyuyor.
+
+2. **Öğretmenlerin Müsaitlik Durumunu Kontrol Et:**
+   - Her öğretmenin hangi gün ve saatlerde müsait olduğunu belirle. Örneğin, Matematik öğretmeni Pazartesi 9:00 ve 10:00 saatlerinde müsaitse, o saatlere ders yerleştirilebilir.
+
+3. **Her Sınıf İçin 35 Saati Doldur:**
+   - Her sınıf için haftada 35 saat ders yerleştir. Sınıfın müfredatına göre dersleri yerleştirirken, öğretmenlerin müsaitliklerine dikkat et.
+   - Örneğin, 5A sınıfı için önce Matematik dersini yerleştir, ardından Fen Bilgisi ve İngilizce gibi diğer dersleri ekle.
+
+4. **Çakışmaları Kontrol Et:**
+   - Aynı saatte bir öğretmenin başka bir sınıfa dersi olup olmadığını kontrol et. Eğer varsa, öğretmeni başka bir saate yerleştir.
+
+5. **Yerleştirme Tamamlandığında Kaydet:**
+   - Yerleştirilen ders programını veritabanına kaydet.
+
+---
+
+### **Adım 4: Örnek Ders Programı Çıktısı**
+
+| Gün          | 09:00-10:00       | 10:00-11:00      | 11:00-12:00   | 12:00-13:00 | 13:00-14:00   | 14:00-15:00  | 15:00-16:00   |
+|--------------|-------------------|------------------
+
+|---------------|-------------|---------------|--------------|---------------|
+| **Pazartesi**| Matematik (Ali)    | Fen Bilgisi (Ayşe)| Türkçe (Mehmet)| **Öğle Arası** | Sosyal Bilgiler (Ayşe)| İngilizce (Canan) | Beden Eğitimi (Ahmet) |
+| **Salı**     | Türkçe (Mehmet)    | Matematik (Ali)  | İngilizce (Canan)| **Öğle Arası** | Fen Bilgisi (Ayşe)| Din Kültürü (Hasan)| Sosyal Bilgiler (Mehmet) |
+| **Çarşamba** | Fen Bilgisi (Ayşe) | Matematik (Ali)  |               | **Öğle Arası** | Türkçe (Mehmet) | Müzik (Ece)  | Beden Eğitimi (Ahmet) |
+| **Perşembe** | Matematik (Ali)    | Türkçe (Mehmet)  | Sosyal Bilgiler (Mehmet)| **Öğle Arası** | Fen Bilgisi (Ayşe) | İngilizce (Canan)|              |
+| **Cuma**     | Sosyal Bilgiler (Mehmet)| İngilizce (Canan)| Din Kültürü (Hasan)| **Öğle Arası** | Matematik (Ali)| Fen Bilgisi (Ayşe) |              |
+
+---
+
+### **Adım 5: Frontend**
+
+**React** ve **TypeScript** kullanarak kullanıcı arayüzünü geliştireceğiz. Bu arayüz üzerinden kullanıcılar öğretmenleri, sınıfları, müfredatları yönetebilecek ve yerleştirme algoritmasını çalıştırarak ders programını görebilecek.
+
+#### **İşlevler:**
+- **Öğretmen Yönetimi**: Öğretmenleri ekleme, güncelleme ve müsaitlik durumlarını yönetme.
+- **Sınıf ve Şube Yönetimi**: Sınıflara ders müfredatı ekleyip güncelleme.
+- **Ders Programı Görüntüleme**: Her sınıf ve her öğretmen için haftalık ders programını görüntüleme.
+- **Yerleştirme Algoritması Çalıştırma**: Tek tıklama ile algoritmayı çalıştırarak tüm ders programını otomatik oluşturma.
+
+---
+
+### **Sonuç:**
+
+Bu proje, okuldaki sınıfların ve öğretmenlerin kısıtlamalarına göre ders programını optimize eden bir yerleştirme algoritması içerir. **Sequelize ORM** ile veritabanı yönetilecek ve **React** ile kullanıcı dostu bir arayüz oluşturulacak. Tüm sınıflar için haftalık 35 ders saatini dolduracak ve çakışmaları önleyecek şekilde bir ders programı hazırlanacak.
+
+Bu detaylı yapıyı onaylıyor musunuz? Eğer her şey uygunsa, projeyi bu temel üzerine inşa etmeye başlayabiliriz.

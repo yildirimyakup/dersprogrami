@@ -1,0 +1,327 @@
+İşte projeyi adım adım baştan sona gerçekleştirirken izlenecek kapsamlı **task listesi** (görev listesi). Bu liste, proje boyunca tüm adımları kapsayacak ve her bir bileşenin oluşturulması için gereksinimleri belirleyecek. Proje boyunca sırasıyla bu başlıkları takip edebiliriz.
+
+---
+
+## **Task Listesi (Görev Listesi)**
+
+### **A. Proje Kurulumu ve Yapılandırması**
+GPT
+Proje Yol Haritası: Detaylı Adımlar
+
+Bu proje, öğretmenlerin ve sınıfların kısıtlamalarına göre optimize edilmiş bir ders programı oluşturmayı hedefleyen bir yerleştirme algoritmasını içermektedir. Aşağıda, projeyi adım adım hayata geçirmek için bir yol haritası yer almaktadır.
+1. Proje Tanımı ve İhtiyaçlar
+Hedef:
+
+    Otomatik ders programı yerleştirme sistemi oluşturmak.
+    Öğretmenlerin müsaitlik durumuna göre sınıflara ders ataması yapmak.
+    Her sınıf için haftalık ders programını oluşturmak.
+
+Kısıtlamalar:
+
+    Öğretmenler haftanın belirli günlerinde ve saatlerinde müsait olacak.
+    Her sınıfın belirli bir müfredata göre haftalık ders saatleri olacak.
+    Öğretmenler aynı anda birden fazla sınıfta ders veremeyecek.
+    Ders programı haftalık olarak optimize edilecek.
+
+İhtiyaçlar:
+
+    Öğretmenler, branşlar, sınıflar, şubeler, ders saatleri, müsaitlik durumları gibi verilerin sisteme tanımlanması.
+    Kısıtlamalar ve ders saatlerine göre ders yerleştirme algoritması geliştirilmesi.
+
+2. Veritabanı Tasarımı
+Veritabanı Modelleri ve İlişkiler:
+
+Projede kullanılacak veritabanı tasarımını oluştururken veriler arasında ilişkiler kurulmalıdır. Bu ilişkiler Prisma ORM kullanılarak tanımlanacak.
+Modeller:
+
+    Teacher (Öğretmenler):
+        Öğretmen adı.
+        Öğretmenin branşı (örn. Matematik, Fen Bilgisi).
+        Öğretmenin haftanın hangi gün ve saatlerinde müsait olduğu.
+
+    Class (Sınıflar/Şubeler):
+        Sınıf adı (örn. 5A, 6B).
+        Hangi branş dersleri işlenecek.
+
+    Schedule (Ders Programı):
+        Öğretmen, sınıf, gün ve saat ilişkileri.
+        Her sınıf için hangi gün ve saatte hangi dersin yapıldığı bilgisi.
+
+    Weekday (Haftanın Günleri):
+        Pazartesi, Salı, Çarşamba, Perşembe, Cuma.
+
+    Hour (Ders Saatleri):
+        H9 (9:00-10:00), H10 (10:00-11:00), H11 (11:00-12:00), H12 (12:00-13:00), H13 (13:00-14:00), H14 (14:00-15:00), H15 (15:00-16:00), H16 (16:00-17:00).
+
+Prisma Şeması:
+
+prisma
+
+model Teacher {
+  id       Int      @id @default(autoincrement())
+  name     String
+  branch   String   // Öğretmenin branşı (örn. Matematik)
+  availableDays Weekday[]  // Hangi günler müsait
+  availableHours Hour[]    // Hangi saatler müsait
+  schedules Schedule[]     // Öğretmenin atanmış dersleri
+}
+
+model Class {
+  id       Int       @id @default(autoincrement())
+  name     String    // Sınıf adı (örn. 5A)
+  schedules Schedule[]  // Sınıfa atanmış ders programı
+}
+
+model Schedule {
+  id        Int      @id @default(autoincrement())
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  teacherId Int
+  class     Class    @relation(fields: [classId], references: [id])
+  classId   Int
+  day       Weekday  // Hangi gün
+  hour      Hour     // Hangi saat
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum Hour {
+  H9
+  H10
+  H11
+  H12
+  H13
+  H14
+  H15
+  H16
+}
+
+3. Backend API Tasarımı
+
+Node.js ve Express.js kullanarak API'ler oluşturacağız. Bu API'ler ile frontend'in veritabanı ile iletişim kurmasını sağlayacağız.
+API İşlevleri:
+
+    Öğretmen CRUD:
+        GET /teachers: Tüm öğretmenleri listele.
+        POST /teachers: Yeni öğretmen ekle.
+        PUT /teachers/:id: Mevcut öğretmeni güncelle.
+        DELETE /teachers/:id: Öğretmeni sil.
+
+    Sınıf CRUD:
+        GET /classes: Tüm sınıfları listele.
+        POST /classes: Yeni sınıf ekle.
+        PUT /classes/:id: Mevcut sınıfı güncelle.
+        DELETE /classes/:id: Sınıfı sil.
+
+    Ders Programı CRUD:
+        GET /schedule: Tüm ders programlarını listele.
+        POST /schedule: Yeni ders programı oluştur.
+        PUT /schedule/:id: Mevcut ders programını güncelle.
+        DELETE /schedule/:id: Ders programını sil.
+
+    Yerleştirme Algoritması API:
+        POST /schedule/auto-generate: Tüm sınıflar ve öğretmenlerin kısıtlamalarına göre ders programı otomatik olarak oluşturulacak.
+
+4. Yerleştirme Algoritması
+
+Öğretmen ve sınıfların kısıtlamalarına göre, uygun zaman dilimlerine ders ataması yapılacak.
+Algoritmanın Adımları:
+
+    Gün ve Saatleri Belirleme:
+        Okulun haftalık düzenine göre belirlenen günler ve saatler sisteme tanımlanacak.
+
+    Öğretmenlerin Müsaitlik Durumunu Kontrol Etme:
+        Her öğretmenin hangi saatlerde ve hangi günlerde müsait olduğunu kontrol et.
+
+    Derslerin Müfredat Saatlerini Belirleme:
+        Her sınıfın hangi derslerden kaç saat alacağını belirle.
+
+    Ders Atama:
+        Öğretmen ve sınıfın müsait olduğu saatlere dersleri yerleştir.
+
+    Kontrol ve Çakışma Engelleme:
+        Aynı öğretmenin aynı anda birden fazla sınıfta olmasını engelle.
+        Öğretmen ve sınıfın aynı anda bir başka dersi olmamalı.
+
+5. Frontend: React ile Kullanıcı Arayüzü
+
+React ve TypeScript kullanarak kullanıcı arayüzü geliştirilecek. Kullanıcılar bu arayüzden öğretmenleri, sınıfları ve ders programlarını yönetebilecek.
+İşlevler:
+
+    Öğretmen Yönetimi:
+        Yeni öğretmen ekleme, güncelleme, silme.
+        Öğretmenlerin hangi dersleri verdiği ve müsaitlik durumu görüntülenebilecek.
+
+    Sınıf Yönetimi:
+        Sınıfların hangi dersleri aldığı ve şubeleri tanımlanacak.
+
+    Ders Programı Görüntüleme:
+        Her sınıf için haftalık ders programı görüntülenecek.
+        Öğretmenlerin haftalık ders programı ayrı olarak gösterilecek.
+
+    Ders Programı Yerleştirme:
+        Kullanıcı, tek bir butona tıklayarak sistemin otomatik olarak ders programını oluşturmasını sağlayacak.
+
+6. Örnek Ders Programı Tablosu
+
+Aşağıda, bir sınıf için oluşturulmuş örnek bir ders programı yer alıyor. Bu tablo, öğretmenlerin müsaitlik durumu ve sınıfların ihtiyaçlarına göre otomatik olarak oluşturulmuş bir haftalık programdır.
+Gün	09:00-10:00	10:00-11:00	11:00-12:00	12:00-13:00	13:00-14:00	14:00-15:00	15:00-16:00
+Pazartesi	Matematik (Ali)	Fen Bilgisi (Ayşe)		Öğle Arası	Sosyal Bilgiler (Mehmet)		İngilizce (Canan)
+Salı	Türkçe (Mehmet)	Matematik (Ali)	İngilizce (Canan)	Öğle Arası	Sosyal Bilgiler (Mehmet)		
+Çarşamba	Fen Bilgisi (Ayşe)			Öğle Arası	Türkçe (Mehmet)		
+Perşembe	Matematik (Ali)	Türkçe (Mehmet)		Öğle Arası	Fen Bilgisi (Ayşe)		
+Cuma	Sosyal Bilgiler (Mehmet)	İngilizce (Canan)		Öğle Arası	Matematik (Ali)		
+7. Projenin Sonraki Adımları
+
+    Kullanıcı Kimlik Doğrulama (Authentication): Kullanıcıların giriş yaparak sistemi yönetebilmeleri için kimlik doğrulama sistemi eklenebilir.
+    Özelleştirilebilir Ders Saatleri: Her okulun kendi ders saatlerini ve sürelerini tanımlayabilmesi için esnek yapı ekle
+1. **Proje Başlangıcı:**
+   - Node.js ve Express.js ile backend projesi oluşturma.
+   - React ve TypeScript ile frontend projesi oluşturma.
+   - Sequelize ORM kurulumu ve veritabanı bağlantısını yapılandırma (SQLite veya başka bir RDBMS).
+
+2. **Gerekli Bağımlılıkların Yüklenmesi:**
+   - Backend: Express.js, Sequelize, dotenv, body-parser.
+   - Frontend: Axios, React, TypeScript, Material-UI.
+
+---
+
+### **B. Veritabanı ve Sequelize ORM Yapılandırması**
+
+3. **Veritabanı Modellerinin Oluşturulması (Sequelize ile):**
+   - **Teacher Modeli**: Öğretmen adları, branşlar, müsaitlik günleri ve saatleri.
+   - **Class Modeli**: Sınıf ve şube adları (örn. 5A, 6B).
+   - **Subject Modeli**: Branş dersleri (örn. Matematik, Fen Bilgisi).
+   - **Schedule Modeli**: Her öğretmen ve sınıfa atanmış ders programı (gün, saat, öğretmen, sınıf, ders).
+   - **Weekday ve Hour**: Haftanın günleri ve saat aralıkları için enum yapıları.
+
+4. **Veritabanı İlişkilerinin Tanımlanması:**
+   - **Teacher-Class-Schedule İlişkileri**: Öğretmen, sınıf ve ders programı arasında ilişkilerin kurulması (one-to-many ve many-to-many).
+   - **Subject (Dersler) ve Schedule İlişkisi**: Her sınıfa atanacak derslerin branşlara göre tanımlanması.
+
+5. **Sequelize Migrations ve Seeds:**
+   - Sequelize migration yapısının oluşturulması.
+   - İlk veritabanı migrasyonlarının oluşturulması.
+   - Örnek öğretmen, sınıf ve ders verilerinin seed edilmesi.
+
+---
+
+### **C. Backend API Tasarımı (Node.js & Express.js)**
+
+6. **Öğretmen Yönetimi API'leri:**
+   - `GET /teachers`: Tüm öğretmenleri listeleme.
+   - `POST /teachers`: Yeni öğretmen ekleme.
+   - `PUT /teachers/:id`: Öğretmen güncelleme.
+   - `DELETE /teachers/:id`: Öğretmen silme.
+
+7. **Sınıf ve Şube Yönetimi API'leri:**
+   - `GET /classes`: Tüm sınıfları listeleme.
+   - `POST /classes`: Yeni sınıf ekleme.
+   - `PUT /classes/:id`: Sınıf güncelleme.
+   - `DELETE /classes/:id`: Sınıf silme.
+
+8. **Ders Yönetimi API'leri:**
+   - `GET /subjects`: Tüm dersleri listeleme.
+   - `POST /subjects`: Yeni ders ekleme.
+   - `PUT /subjects/:id`: Ders güncelleme.
+   - `DELETE /subjects/:id`: Ders silme.
+
+9. **Ders Programı Yönetimi API'leri:**
+   - `GET /schedule`: Tüm ders programlarını listeleme.
+   - `POST /schedule`: Yeni ders programı ekleme (manuel olarak).
+   - `PUT /schedule/:id`: Mevcut ders programını güncelleme.
+   - `DELETE /schedule/:id`: Ders programını silme.
+
+---
+
+### **D. Ders Programı Yerleştirme Algoritması**
+
+10. **Yerleştirme Algoritmasının Geliştirilmesi:**
+   - Öğretmen ve sınıfların kısıtlamalarına göre ders yerleştirme algoritması yazımı.
+   - Kısıtlamalar: Öğretmenlerin müsait saatleri, branş derslerinin haftalık ders saati ihtiyaçları, sınıfların haftalık 35 saat dolması, çakışmaların engellenmesi.
+
+11. **Otomatik Ders Programı Yerleştirme API'si:**
+   - `POST /schedule/auto-generate`: Öğretmenlerin ve sınıfların kısıtlamalarına göre haftalık ders programını otomatik oluşturma.
+
+---
+
+### **E. Frontend Geliştirmesi (React & TypeScript)**
+
+12. **Frontend Projesinin Yapılandırılması:**
+   - Proje yapısının oluşturulması (React, TypeScript).
+   - Material-UI ile kullanıcı arayüzü tasarımı.
+
+13. **Öğretmen Yönetimi (Frontend):**
+   - Tüm öğretmenleri listeleme, yeni öğretmen ekleme, güncelleme ve silme ekranlarının oluşturulması.
+
+14. **Sınıf ve Şube Yönetimi (Frontend):**
+   - Tüm sınıfları listeleme, yeni sınıf ekleme, güncelleme ve silme ekranlarının oluşturulması.
+
+15. **Ders Yönetimi (Frontend):**
+   - Tüm dersleri listeleme, yeni ders ekleme, güncelleme ve silme ekranlarının oluşturulması.
+
+16. **Ders Programı Görüntüleme (Frontend):**
+   - Tüm sınıflar için haftalık ders programı görüntüleme ekranı.
+   - Her öğretmenin haftalık programını ayrı ayrı görüntüleme.
+   - Ders programı düzenleme ve güncelleme ekranlarının oluşturulması.
+
+17. **Otomatik Yerleştirme Algoritmasını Çalıştırma:**
+   - Otomatik ders programı yerleştirme butonu ile API çağrısını tetikleyip, programı oluşturan ekranın hazırlanması.
+
+---
+
+### **F. Test ve Hata Ayıklama**
+
+18. **Backend API Testleri:**
+   - API işlevlerini test etmek için Postman veya Insomnia kullanarak CRUD işlemlerini test etme.
+   - Otomatik yerleştirme algoritmasının doğru çalıştığından emin olma.
+
+19. **Frontend Testleri:**
+   - Tüm arayüz bileşenlerinin test edilmesi (React).
+   - Kullanıcı arayüzü ile ders programı oluşturma ve görüntüleme işlevlerinin kontrol edilmesi.
+
+---
+
+### **G. Optimizasyon ve Geliştirmeler**
+
+20. **Yerleştirme Algoritmasının İyileştirilmesi:**
+   - Ders yerleştirme algoritmasının performans optimizasyonu.
+   - Daha hızlı ve verimli ders yerleştirme için iyileştirmeler.
+
+21. **Kullanıcı Kimlik Doğrulama (Opsiyonel):**
+   - Yönetici veya öğretmenler için kimlik doğrulama sistemi (authentication) eklenmesi.
+   - Token tabanlı kimlik doğrulama (JWT) ile giriş ve çıkış işlemleri.
+
+22. **Projenin Canlıya Alınması ve Deployment:**
+   - Projeyi canlıya almak için gerekli yapılandırmalar (Heroku, Netlify, DigitalOcean vb. platformlar).
+
+---
+
+### **Örnek Kullanım Durumu:**
+#### **Senaryo**:
+- **Okul A**'da 5 öğretmen ve 3 sınıf bulunuyor (5A, 6B, 7C).
+- Her sınıfın haftalık 35 saat dersi var ve dersler şu şekilde:
+  - Matematik: 4 saat
+  - Fen Bilgisi: 3 saat
+  - Türkçe: 5 saat
+  - Sosyal Bilgiler: 3 saat
+  - İngilizce: 4 saat
+  - Din Kültürü: 2 saat
+  - Beden Eğitimi: 2 saat
+  - Diğer dersler: 12 saat
+
+#### **Adımlar**:
+1. **Öğretmenlerin Tanımlanması**: Her öğretmenin adı, branşı, ve haftalık müsait olduğu günler/saatler belirlenir.
+2. **Sınıfların Tanımlanması**: Okul A'nın sınıfları (5A, 6B, 7C) ve bu sınıfların haftalık ders müfredatı sisteme girilir.
+3. **Yerleştirme Algoritmasının Çalıştırılması**: Öğretmenlerin ve sınıfların kısıtlamalarına göre her sınıfın haftalık 35 saat ders programı otomatik olarak oluşturulur.
+4. **Ders Programının Görüntülenmesi**: Her sınıfın hangi gün ve saatlerde hangi öğretmenle hangi dersleri göreceği ekranda listelenir.
+
+---
+
+### **Sonuç:**
+Bu **task listesi**, projeyi adım adım hayata geçirmek için gerekli tüm işlemleri kapsamaktadır. Her bir adımda detaylı olarak projeyi oluşturabiliriz. Eğer her şey tamamsa, bu sıralamaya göre projeyi başlatabiliriz.
